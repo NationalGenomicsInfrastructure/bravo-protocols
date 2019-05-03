@@ -46,7 +46,7 @@ protocols["PCR cleanup 1"] = {
 		sampleVolume: 21,
 		beadVolume: 37.8,
 		bindTime: 300,
-		elutionVolume: 12,
+		elutionVolume: 30,
 		beadPlateToUse: 1,
 		altBindPlate: true,
 		splitEluateVolume: 6
@@ -57,7 +57,7 @@ protocols["PCR cleanup 2"] = {
 	file: "16s_ampure_xp.pro",
 	settings: {
 		sampleVolume: 20,
-		beadVolume: 36,
+		beadVolume: 20,
 		bindTime: 300,
 		elutionVolume: 20,
 		altBindPlate: true
@@ -67,10 +67,11 @@ protocols["PCR cleanup 2"] = {
 var settings = {};
 
 updateSettings(formProtocol);
-runset.appendProtocolFileToRunset(path+protocols[formProtocol].file, 1, "", form);
 
 if(formProtocol === "PCR cleanup 1" && settings.splitEluateVolume > 0) {
-	runset.appendProtocolFileToRunset(path+"16s_transfer_volume.pro", 1, "", form);
+	runset.openRunsetFile(path+"16s_ampure_and_transfer.rst", form);
+} else {
+	runset.appendProtocolFileToRunset(path+protocols[formProtocol].file, 1, "", form);
 }
 
 function updateSettings(protocol) {
