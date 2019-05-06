@@ -9,7 +9,7 @@
       <Property name="TabIndex">18</Property>
       <Property name="Name">operatorConsoleStatic10</Property>
       <Property name="Size">138, 69</Property>
-      <Property name="Text">When using a Nunc plate: Put buffer in A1 and calculate that volume is sufficient for all dilutions.</Property>
+      <Property name="Text">When using a Nunc plate: Put buffer in H12 and calculate that volume is sufficient for all dilutions.</Property>
       <Property name="Font">Tahoma, 8pt</Property>
       <Property name="UseCompatibleTextRendering">True</Property>
       <Property name="ForeColor">102, 102, 102</Property>
@@ -20,7 +20,7 @@
       <Parameter Name="JavaScript variable" Description="The variable whose value is displayed in this field" Type="1" Value="" ValueToDisplay="" Hide_if="" />
       <Parameter Name="Always use global context" Description="If checked, the variable above will always be retrieved from the Global context" Type="0" Value="1" ValueToDisplay="" Hide_if="" />
       <Parameter Name="Default value" Description="The default value of the Javascript variable" Type="1" Value="" ValueToDisplay="" Hide_if="Variable(JavaScript variable) == Const(&quot;&quot;)" />
-      <Parameter Name="Display string" Description="The string to display in the static text control" Type="1" Value="When using a Nunc plate: Put buffer in A1 and calculate that volume is sufficient for all dilutions." ValueToDisplay="" Hide_if="Variable(JavaScript variable) != Const(&quot;&quot;)" />
+      <Parameter Name="Display string" Description="The string to display in the static text control" Type="1" Value="When using a Nunc plate: Put buffer in H12 and calculate that volume is sufficient for all dilutions." ValueToDisplay="" Hide_if="Variable(JavaScript variable) != Const(&quot;&quot;)" />
       <Parameter Name="Border" Description="If the static text control is to be drawn with a border around it" Type="0" Value="0" ValueToDisplay="" Hide_if="" />
       <Parameter Name="Font size" Description="The point size of the font used to display text in this field" Type="8" Value="8" ValueToDisplay="" Hide_if="">
         <Ranges>
@@ -30,7 +30,7 @@
       </Parameter>
       <Parameter Name="Font color" Description="The color of the font used to display text in this field" Type="32" Value="6710886" ValueToDisplay="" Hide_if="" />
       <Parameter Name="Enabled" Description="" Type="0" Value="1" ValueToDisplay="" Hide_if="" />
-      <Parameter Name="Value" Description="" Type="1" Value="When using a Nunc plate: Put buffer in A1 and calculate that volume is sufficient for all dilutions." ValueToDisplay="" Hide_if="" />
+      <Parameter Name="Value" Description="" Type="1" Value="When using a Nunc plate: Put buffer in H12 and calculate that volume is sufficient for all dilutions." ValueToDisplay="" Hide_if="" />
     </Object>
     <Object type="ToolboxLibrary.OperatorConsoleStatic, Toolbox, Version=1.0.4672.4034, Culture=neutral, PublicKeyToken=null" name="operatorConsoleStatic9" children="Controls">
       <Property name="TabIndex">17</Property>
@@ -90,7 +90,7 @@
       </Parameter>
       <Parameter Name="Font color" Description="The color of the font used to display text in this field" Type="32" Value="0" ValueToDisplay="" Hide_if="" />
       <Parameter Name="Enabled" Description="" Type="0" Value="1" ValueToDisplay="" Hide_if="" />
-      <Parameter Name="Value" Description="" Type="1" Value="Reservoir" ValueToDisplay="" Hide_if="" />
+      <Parameter Name="Value" Description="" Type="1" Value="" ValueToDisplay="" Hide_if="" />
     </Object>
     <Object type="ToolboxLibrary.OperatorConsoleStatic, Toolbox, Version=1.0.4672.4034, Culture=neutral, PublicKeyToken=null" name="operatorConsoleStatic8" children="Controls">
       <Property name="TabIndex">15</Property>
@@ -395,10 +395,10 @@
       <Property name="TabIndex">5</Property>
       <Property name="Text"> START</Property>
       <Property name="Location">100, 352</Property>
-      <Property name="Name">operatorConsoleButton1</Property>
       <Property name="DataBindings">
         <Property name="DefaultDataSourceUpdateMode">OnValidation</Property>
       </Property>
+      <Property name="Name">operatorConsoleButton1</Property>
       <Property name="TextImageRelation">ImageBeforeText</Property>
       <Property name="ForeColor">0, 0, 0</Property>
       <Parameter Name="Script" Description="The JavaScript to execute when this button is pressed" Type="31" Value="// Load the correct protocol depending on what the user&#xA;// selected in the form:&#xA;var path = &quot;C:/VWorks Workspace/Protocol files/facility/transfer/&quot;;&#xA;var fileMap = {&#xA;	&quot;Aliquotation&quot;: &quot;transfer_hal.pro&quot;,&#xA;	&quot;Dilution&quot;: &quot;transfer_dilution_hal.pro&quot;,&#xA;	&quot;Setup Workset/Plate (LIMS)&quot;: &quot;transfer_dilution_hal.pro&quot;,&#xA;	&quot;Library Normalization (LIMS)&quot;: &quot;transfer_dilution_hal.pro&quot;,&#xA;	&quot;Adapter&quot;: &quot;transfer_adapter_hal.pro&quot;&#xA;};&#xA;var file = path + fileMap[formMode];&#xA;runset.clear();&#xA;runset.appendProtocolFileToRunset(file, 1, &quot;&quot;, &quot;transfer_form_hal.VWForm&quot;);&#xA;&#xA;//run(&quot;C:/VWorks Workspace/Protocol Files/facility/resources/clear_inventory.bat&quot;, true);" ValueToDisplay="" Hide_if="" />
