@@ -7,11 +7,11 @@
 
 /*
  CHANGED in this version:
- -- Numeric conversion of LIMS ID's (P1234P1, 27-12345) when sorting
+  - Check for extra fields in parseTransfers.
+  - Add row index to parsing exceptions.
 
  TODO
- --Make a common function for assigning sourceVolume, sourcePlate etc.
- --Methods to prototype properties
+  -
  */
 
  var testing = false;
@@ -22,10 +22,11 @@
  Object containing information of a liquid transfer; a set of source
  coordinates (row, columnn), a volume and destination coordinates
 */
-function Transfer(sourcePlate, sourceWell, volume, destinationWell, destinationPlate, newTip) {
+function Transfer(sourcePlate, sourceWell, volume, destinationWell, destinationPlate, newTip, diluentVolume) {
 	this.sourcePlate = sourcePlate;
 	this.sourceWell = sourceWell;
 	this.volume = volume;
+	this.diluentVolume = (typeof diluentVolume !== "undefined") ? diluentVolume : 0;
 	this.destinationWell = destinationWell;
 	this.destinationPlate = destinationPlate;
 	this.newTip = newTip;
@@ -37,6 +38,7 @@ Transfer.prototype.toString = function() {
 			"sourceWell: " + String.fromCharCode(this.sourceWell[0]+64) +
 					this.sourceWell[1],
 			"volume: " + this.volume,
+			"diluentVolume: " + this.diluentVolume,
 			"destinationPlate: " + this.destinationPlate,
 			"destinationWell: " + String.fromCharCode(this.destinationWell[0]+64) +
 					this.destinationWell[1],
@@ -55,14 +57,14 @@ function Tipbox(tips, origin) {
 	} else if(origin.row === 8) {
 		this.getRow = rowFromIndex;
 	} else {
-		throw "UnknownStartPositionException: \"" + origin.row + "\"";
+		throw 'UnknownStartPositionException: "' + origin.row + '"';
 	}
 	if(origin.column === 1) {
 		this.getColumn = columnFromIndexReverse;
 	} else if(origin.column === 12) {
 		this.getColumn = columnFromIndex;
 	} else {
-		throw "UnknownStartPositionException: \"" + origin.column + "\"";
+		throw 'UnknownStartPositionException: "' + origin.column + '"';
 	}
 	this.tipCount = parseInt(tips, 10) || 0;
 	this.hasTip = function() {
@@ -139,7 +141,7 @@ function parseNumber(value, places) {
 	var floatValue = parseFloat(value);
 	var number = (intValue == floatValue) ? intValue : floatValue;
 	if(isNaN(number) || !isFinite(number)) {
-		throw "UnexpectedValueException: \"" + value + "\"";
+		throw 'UnexpectedValueException: "' + value + '"';
 	}
 	if(typeof places === "number") number = parseFloat(number.toFixed(places));
 	return number;
@@ -178,10 +180,10 @@ function convertCoords(wellPos) {
 		var row = parseNumber(wellPos.trim().toUpperCase().charCodeAt(0) - 64);
 		var column = parseNumber(wellPos.trim().replace(":","").substr(1));
 	} catch(e) {
-		throw "InvalidCoordinatesException: \"" + wellPos + "\": " + e;
+		throw 'InvalidCoordinatesException: "' + wellPos + '": ' + e;
 	}
 	if(column < 1 || column > 24 || row < 1 || row > 16) {
-		throw "InvalidCoordinatesException: \"" + wellPos + "\"";
+		throw 'InvalidCoordinatesException: "' + wellPos + '"';
 	}
 	return [row, column];
 }
@@ -192,12 +194,12 @@ function convertCoords(wellPos) {
 */
 function convertCoordsRegExp(wellPos) {
 	var match = wellPos.trim().match(/^([A-Ha-h])(?:\:)?((?:0)?[1-9]|1[0-2])$/);
-	if(!match) throw "InvalidCoordinatesException: \"" + wellPos + "\"";
+	if(!match) throw 'InvalidCoordinatesException: "' + wellPos + '"';
 	try {
 		var row = parseNumber(match[1].toUpperCase().charCodeAt(0) - 64);
 		var column = parseNumber(match[2]);
 	} catch(e) {
-		throw "InvalidCoordinatesException: \"" + wellPos + "\": " + e;
+		throw 'InvalidCoordinatesException: "' + wellPos + '": ' + e;
 	}
 	return [row, column];
 }
@@ -216,13 +218,13 @@ function transferSorter(plateCol, wellCol) {
 			a.id = parseNumber(a.id);
 			b.id = parseNumber(b.id);
 		} else {
-			var p = /\d\d\-\d{4,}/;
+			var p = /^\d\d\-\d{4,}$/;
 			// If plate ID is a LIMS ID, convert from string to int:
 			if(a.id.match(p) && b.id.match(p)) {
 				a.id = parseNumber(a.id.replace("-",""));
 				b.id = parseNumber(b.id.replace("-",""));
 			} else {
-				p = /P\d{3,}P\d{1,2}/i;
+				p = /^P\d{3,}P\d{1,2}$/i;
 				// If plate ID is a project plate ID, e.g. P4568P2,
 				// covert to int by removing 'P', e.g. 45682:
 				if(a.id.match(p) && b.id.match(p)) {
@@ -280,6 +282,7 @@ function parseTransfers(str) {
 	for(var i=0, n=rowArray.length; i<n; i++) {
 		var row = rowArray[i];
 		var sourcePlate, sourceWell, volume, destinationWell, destinationPlate;
+		var expectedFields = 5;
 		try {
 			sourcePlate = row[0].trim();
 			sourceWell = convertCoordsRegExp(row[1]);
@@ -291,9 +294,15 @@ function parseTransfers(str) {
 			} catch(e) {
 				destinationPlate = "aliquot_plate";
 				destinationWell = convertCoordsRegExp(row[3]);
+				expectedFields = 4;
+			} finally {
+				if(row.length > expectedFields) {
+					throw "Too many fields. The format does not match the" +
+						" selected mode.";
+				}
 			}
 		} catch(e) {
-			throw "UnableToParseTransferTableException:" + e;
+			throw "UnableToParseTransferTableException " + "[" + (i+1) + "]: " + e;
 		}
 		if(volume > 0) {
 			if(!(sourcePlate in plateSet)) {
@@ -350,7 +359,7 @@ function parseAdapterTransfers(str, indexSet) {
 	if(indexSet in INDEX_SETS) {
 		plateMap = INDEX_SETS[indexSet];
 	} else {
-		throw "UnknownIndexSetIdException: \"" + indexSet + "\"";
+		throw 'UnknownIndexSetIdException: "' + indexSet + '"';
 	}
 	var rowArray = parseCsv(str, ",");
 	// Sort the array by index:
@@ -368,7 +377,7 @@ function parseAdapterTransfers(str, indexSet) {
 			volume = parseNumber(row[2], 3);
 			destinationWell = convertCoordsRegExp(row[0]);
 		} catch(e) {
-			throw "UnableToParseTransferTableException:" + e;
+			throw "UnableToParseTransferTableException " + "[" + (i+1) + "]: " + e;
 		}
 		// Keep tip between transfers of the same index:
 		var newTip = (i == 0) || (row[1] != rowArray[i-1][1]);
@@ -384,6 +393,7 @@ function parseAdapterTransfers(str, indexSet) {
  Creates an array of Transfer objects from a csv file with format:
 	sourcePlate,sourceWell,sourceVolume,destinationWell,finalVolume
  where sourceWell and destinationWell are given in plate coordinates, e.g. 'D4'
+ Creates one Transfer object for the source transfer and one for the diluent.
 */
 function parseDilutionTransfers(str) {
 	var rowArray = parseCsv(str, ",");
@@ -416,7 +426,7 @@ function parseDilutionTransfers(str) {
 				diluentVolume = +(parseNumber(row[4], 3) - sourceVolume).toFixed(3);
 			}
 		} catch(e) {
-			throw "UnableToParseTransferTableException:" + e;
+			throw "UnableToParseTransferTableException " + "[" + (i+1) + "]: " + e;
 		}
 		var newTip;
 		if(diluentVolume > 0) {
@@ -492,7 +502,7 @@ function parseDilutionTransfersLims(str) {
 				}
 			}
 		} catch(e) {
-			throw "UnableToParseTransferTableException:" + e;
+			throw "UnableToParseTransferTableException " + "[" + (i+1) + "]: " + e;
 		}
 		var newTip;
 		if(diluentVolume > 0) {
@@ -508,6 +518,56 @@ function parseDilutionTransfersLims(str) {
 			newTip = (sourceIndex > 1 || transferArrays[sourceIndex].length > 0);
 			transferArrays[sourceIndex].push(new Transfer(sourcePlate, sourceWell,
 				sourceVolume, destinationWell, destinationPlate, newTip));
+		}
+	}
+	return transferArrays;
+}
+
+
+/*
+ Creates an array of Transfer objects from a csv file with format:
+	sourcePlate,sourceWell,sourceVolume,destinationWell,finalVolume
+ where sourceWell and destinationWell are given in plate coordinates, e.g. 'D4'
+ This variant puts the diluent volume in the same Transfer object.
+*/
+function parseDilutionTransfersSingle(str) {
+	var rowArray = parseCsv(str, ",");
+	// Order the arrray on plate ID:
+	rowArray.sort(transferSorter(0,1));
+	var transferArrays = [];
+	var plateSet = {};
+	var sourceIndex;
+	var diluentWell = convertCoords("A1");
+	for(var i=0, n=rowArray.length; i<n; i++) {
+		var row = rowArray[i];
+		var sourcePlate, sourceWell, sourceVolume;
+		var destinationPlate, destinationWell, diluentVolume;
+		try {
+			sourcePlate = row[0].trim();
+			sourceWell = convertCoordsRegExp(row[1]);
+			sourceVolume = parseNumber(row[2], 3);
+			// Temporary fix to also handle format with destination plate ID:
+			try {
+				destinationWell = convertCoordsRegExp(row[4]);
+				destinationPlate = row[3].trim();
+				// The substraction float may contain many dec so it is rounded:
+				diluentVolume = +(parseNumber(row[5], 3) - sourceVolume).toFixed(3);
+			} catch(e) {
+				destinationPlate = "diluted_plate";
+				destinationWell = convertCoordsRegExp(row[3]);
+				// The substraction float may contain many dec so it is rounded:
+				diluentVolume = +(parseNumber(row[4], 3) - sourceVolume).toFixed(3);
+			}
+		} catch(e) {
+			throw "UnableToParseTransferTableException" + "[" + (i+1) + "]: " + e;
+		}
+		if(!(sourcePlate in plateSet)) {
+			plateSet[sourcePlate] = sourcePlate;
+			sourceIndex = transferArrays.push([]) - 1;
+		}
+		if(diluentVolume > 0 || sourceVolume > 0) {
+			transferArrays[sourceIndex].push(new Transfer(sourcePlate, sourceWell,
+				sourceVolume, destinationWell, destinationPlate, true, diluentVolume));
 		}
 	}
 	return transferArrays;
@@ -594,12 +654,13 @@ function TransferManager(transferMode, tipMode) {
 		"transfer":parseTransfers,
 		"dilution":parseDilutionTransfers,
 		"adapter":parseAdapterTransfers,
-		"lims_dilution": parseDilutionTransfersLims
+		"lims_dilution": parseDilutionTransfersLims,
+		"single_tip_dilution": parseDilutionTransfersSingle
 	};
 	if(transferMode in this.functionMap) {
 		this.parseFunction = this.functionMap[transferMode];
 	} else {
-		throw "UnknownParseModeException: \"" + transferMode + "\"";
+		throw 'UnknownParseModeException: "' + transferMode + '"';
 	}
 	// Array of Transfer object arrays:
 	this.transfers;
@@ -640,7 +701,6 @@ function TransferManager(transferMode, tipMode) {
 		this.plate = 0;
 		this.index = -1;
 	}
-	// Calculate number of transfers for each source ID:
 	// Calculate number of transfers for each source ID:
 	this.updateSize = function() {
 		var n = this.transfers.length
@@ -748,7 +808,7 @@ function TransferManager(transferMode, tipMode) {
 			for(var i=this.transfers.length; i-->0 && test;) {
 				var temp = this.transfers[i];
 				for(var j=temp.length; j-->0 && test;) {
-					test = temp[j].volume <= limit;
+					test = (temp[j].volume + temp[j].diluentVolume) <= limit;
 				}
 			}
 		}
@@ -774,6 +834,9 @@ function TransferManager(transferMode, tipMode) {
 	}
 	this.getVolume = function() {
 		return this.current.volume;
+	}
+	this.getDiluentVolume = function() {
+		return this.current.diluentVolume;
 	}
 	this.useNewTip = function() {
 		return this.current.newTip;
